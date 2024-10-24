@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "us-east-1" # Cambia la región si es necesario
+  region = "us-east-1"
 }
 
 # VPC
@@ -53,26 +53,33 @@ resource "aws_route_table_association" "main_route_assoc" {
 resource "aws_security_group" "allow_traffic" {
   vpc_id = aws_vpc.main_vpc.id
 
-  # Allow incoming traffic for Jenkins, Prometheus, Grafana
+  # Allow incoming traffic for Jenkins, Prometheus, Grafana, and SSH
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # SSH
+  }
+
   ingress {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] # Jenkins
   }
 
   ingress {
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] # Prometheus
   }
 
   ingress {
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] # Grafana
   }
 
   # Allow all egress traffic
@@ -88,24 +95,29 @@ resource "aws_security_group" "allow_traffic" {
   }
 }
 
-# Key Pair
-resource "aws_key_pair" "deployer_key" {
-  key_name   = "deployer-key"
-  public_key = file("~/.ssh/id_rsa.pub") # Ruta a tu llave pública
-}
-
 # Jenkins Instance
 resource "aws_instance" "jenkins" {
-  ami           = "ami-04f215f0e52ec06cf" 
+  ami           = "ami-04f215f0e52ec06cf"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
-  key_name      = aws_key_pair.deployer_key.key_name
-  vpc_security_group_ids = [aws_security_group.allow_traffic.id]  # Cambiado a vpc_security_group_ids y usando .id
+  vpc_security_group_ids = [aws_security_group.allow_traffic.id]
 
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
               sudo apt install openjdk-11-jdk -y
+              sudo apt install -y openssh-server
+
+              # Habilitar autenticación por contraseña
+              sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+              sudo systemctl restart sshd
+
+              # Crear un usuario con contraseña (usuario: admin, contraseña: password)
+              sudo useradd -m admin
+              echo 'admin:password' | sudo chpasswd
+              sudo usermod -aG sudo admin
+
+              # Instalar Jenkins
               wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo apt-key add -
               sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
               sudo apt update -y
@@ -121,15 +133,26 @@ resource "aws_instance" "jenkins" {
 
 # Prometheus Instance
 resource "aws_instance" "prometheus" {
-  ami           = "ami-04f215f0e52ec06cf" # Ubuntu AMI
+  ami           = "ami-04f215f0e52ec06cf"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
-  key_name      = aws_key_pair.deployer_key.key_name
-  vpc_security_group_ids = [aws_security_group.allow_traffic.id]  # Cambiado a vpc_security_group_ids y usando .id
+  vpc_security_group_ids = [aws_security_group.allow_traffic.id]
 
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
+              sudo apt install -y openssh-server
+
+              # Habilitar autenticación por contraseña
+              sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+              sudo systemctl restart sshd
+
+              # Crear un usuario con contraseña
+              sudo useradd -m admin
+              echo 'admin:password' | sudo chpasswd
+              sudo usermod -aG sudo admin
+
+              # Instalar Prometheus
               sudo useradd --no-create-home --shell /bin/false prometheus
               sudo mkdir /etc/prometheus
               sudo mkdir /var/lib/prometheus
@@ -166,15 +189,26 @@ resource "aws_instance" "prometheus" {
 
 # Grafana Instance
 resource "aws_instance" "grafana" {
-  ami           = "ami-04f215f0e52ec06cf" # Ubuntu AMI
+  ami           = "ami-04f215f0e52ec06cf"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
-  key_name      = aws_key_pair.deployer_key.key_name
-  vpc_security_group_ids = [aws_security_group.allow_traffic.id]  # Cambiado a vpc_security_group_ids y usando .id
+  vpc_security_group_ids = [aws_security_group.allow_traffic.id]
 
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
+              sudo apt install -y openssh-server
+
+              # Habilitar autenticación por contraseña
+              sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+              sudo systemctl restart sshd
+
+              # Crear un usuario con contraseña
+              sudo useradd -m admin
+              echo 'admin:password' | sudo chpasswd
+              sudo usermod -aG sudo admin
+
+              # Instalar Grafana
               sudo apt install -y adduser libfontconfig1
               wget https://dl.grafana.com/oss/release/grafana_8.2.2_amd64.deb
               sudo dpkg -i grafana_8.2.2_amd64.deb
