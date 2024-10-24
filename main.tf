@@ -96,7 +96,7 @@ resource "aws_key_pair" "deployer_key" {
 
 # Jenkins Instance
 resource "aws_instance" "jenkins" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu AMI
+  ami           = "ami-04f215f0e52ec06cf" 
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
   key_name      = aws_key_pair.deployer_key.key_name
@@ -121,7 +121,7 @@ resource "aws_instance" "jenkins" {
 
 # Prometheus Instance
 resource "aws_instance" "prometheus" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu AMI
+  ami           = "ami-04f215f0e52ec06cf" # Ubuntu AMI
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
   key_name      = aws_key_pair.deployer_key.key_name
@@ -166,7 +166,7 @@ resource "aws_instance" "prometheus" {
 
 # Grafana Instance
 resource "aws_instance" "grafana" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu AMI
+  ami           = "ami-04f215f0e52ec06cf" # Ubuntu AMI
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
   key_name      = aws_key_pair.deployer_key.key_name
