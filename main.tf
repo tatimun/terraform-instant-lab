@@ -100,7 +100,7 @@ resource "aws_instance" "jenkins" {
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
   key_name      = aws_key_pair.deployer_key.key_name
-  security_group_ids = [aws_security_group.allow_traffic.name]
+  vpc_security_group_ids = [aws_security_group.allow_traffic.name]
 
   user_data = <<-EOF
               #!/bin/bash
@@ -125,7 +125,7 @@ resource "aws_instance" "prometheus" {
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
   key_name      = aws_key_pair.deployer_key.key_name
-  security_group_ids = [aws_security_group.allow_traffic.name]
+  vpc_security_group_ids = [aws_security_group.allow_traffic.name]
 
   user_data = <<-EOF
               #!/bin/bash
@@ -170,7 +170,7 @@ resource "aws_instance" "grafana" {
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main_subnet.id
   key_name      = aws_key_pair.deployer_key.key_name
-  security_group_ids = [aws_security_group.allow_traffic.name]
+  vpc_security_group_ids = [aws_security_group.allow_traffic.name]
 
   user_data = <<-EOF
               #!/bin/bash
